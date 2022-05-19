@@ -1,0 +1,25 @@
+server:
+  app-name:     "k8s-sync"
+  openapiPath: "/api.json"
+  swaggerPath: "/swagger"
+
+database:
+  logger:
+    path:   "/var/log/gf-app/sql"
+    level:  "all"
+    stdout: true
+  default:
+    debug: true
+    host: "127.0.0.1"
+    port: "3306"
+    user: "root"
+    pass: "123456"
+    type: "mysql"
+    charset:       "utf8"
+    timezone:      "local"
+    maxIdle:       "10"
+    maxOpen:       "100"
+    maxLifetime:   "30s"
+
+
+#docker run -p 3306:3306--name mysql -v /docker/mysql/conf:/etc/mysql/conf.d -v /docker/mysql/logs:/logs -v /docker/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD:123456 -d mysql
