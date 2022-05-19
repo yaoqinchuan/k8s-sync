@@ -11,7 +11,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 )
 
-const APP_CONFIG_DB_TABLE_NAME = "app_config"
+const AppConfigDbTableName = "app_config"
 
 var dbConnect gdb.DB
 var DbConfigData *gcfg.Config
@@ -37,7 +37,7 @@ func init() {
 }
 
 func (*DbConfig) Available(ctx context.Context, resource ...string) (ok bool) {
-	_, err := dbConnect.GetOne(ctx, fmt.Sprintf("select * from %v limit 1", APP_CONFIG_DB_TABLE_NAME))
+	_, err := dbConnect.GetOne(ctx, fmt.Sprintf("select * from %v limit 1", AppConfigDbTableName))
 	if err != nil {
 		Logger.Critical(ctx, "check app config failed.")
 		return false
@@ -45,8 +45,8 @@ func (*DbConfig) Available(ctx context.Context, resource ...string) (ok bool) {
 	return true
 }
 
-func Get(ctx context.Context, pattern string) (value interface{}, err error) {
-	config, err := dbConnect.GetOne(ctx, fmt.Sprintf("select * from %v where config_name = ? and deleted = 0", APP_CONFIG_DB_TABLE_NAME), pattern)
+func (*DbConfig) Get(ctx context.Context, pattern string) (value interface{}, err error) {
+	config, err := dbConnect.GetOne(ctx, fmt.Sprintf("select * from %v where config_name = ? and deleted = 0", AppConfigDbTableName), pattern)
 	if err != nil {
 		Logger.Error(ctx, fmt.Sprintf("get config by key %v failed, error is %v", pattern, err))
 		return nil, err
@@ -60,9 +60,9 @@ func Get(ctx context.Context, pattern string) (value interface{}, err error) {
 	return configStruct.ConfigValue, nil
 }
 
-func Data(ctx context.Context) (data map[string]interface{}, err error) {
+func (*DbConfig) Data(ctx context.Context) (data map[string]interface{}, err error) {
 	result := make(map[string]interface{}, 10)
-	config, err := dbConnect.GetAll(ctx, fmt.Sprintf("select * from %v where deleted = 0", APP_CONFIG_DB_TABLE_NAME))
+	config, err := dbConnect.GetAll(ctx, fmt.Sprintf("select * from %v where deleted = 0", AppConfigDbTableName))
 	if err != nil {
 		Logger.Error(ctx, fmt.Sprintf("get all config failed, error is %v", err))
 		return nil, err

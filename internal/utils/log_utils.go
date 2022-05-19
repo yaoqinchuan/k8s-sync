@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-
 	"github.com/gogf/gf/v2/os/glog"
 )
 
@@ -23,10 +22,13 @@ func getLogger() *glog.Logger {
 	configMap["RotateBackupExpire"] = "7d"
 	configMap["RotateBackupCompress"] = 9
 
-	logger.SetConfigWithMap(configMap)
+	err := logger.SetConfigWithMap(configMap)
+	if err != nil {
+		return nil
+	}
 
 	loggerPath := "/var/log"
-	err := logger.SetPath(loggerPath)
+	err = logger.SetPath(loggerPath)
 	if err != nil {
 		glog.Panic(context.Background(), "init error log path failed, error:"+err.Error())
 

@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	_ "mygogf/internal/packed"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
+	"k8s-sync/internal/controller/v1"
 )
 
 type inputArgs struct {
@@ -28,15 +25,15 @@ type cCmdInput struct {
 }
 type cCmdOutput struct{}
 
-var args inputArgs = inputArgs{}
+var args = inputArgs{}
 
-func (c *cMain) CmdInit(ctx context.Context, in cCmdInput) (out *cCmdOutput, err error) {
+func ApiHandlerRegister(s *ghttp.Server) {
+	controller.AccountApiHandlerRegister(s)
+}
+func (c *cMain) CmdInit(in cCmdInput) (out *cCmdOutput, err error) {
 	args.Port = in.Port
 	args.Mode = in.Mode
 	s := g.Server("sync-k8s")
-	s.BindHandler("/", func(r *ghttp.Request) {
-		r.Response.Write(fmt.Printf("app %v run with mode %v on port %v", args.Mode, args.Port))
-	})
 	s.SetPort(args.Port)
 	s.Run()
 	return

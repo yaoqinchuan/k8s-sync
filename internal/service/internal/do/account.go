@@ -6,9 +6,9 @@ import (
 
 type Account struct {
 	Id       uint        `json:"id"       `
-	UserName string      `json:"config_key" `
-	UserId   string      `json:"config_value" `
-	UserRole int         `json:"describe" `
+	UserName string      `json:"user_name" `
+	UserId   string      `json:"user_id" `
+	UserRole int         `json:"user_role" `
 	Email    string      `json:"email"`
 	CreateAt *gtime.Time `json:"create_at" `
 	UpdateAt *gtime.Time `json:"update_at" `

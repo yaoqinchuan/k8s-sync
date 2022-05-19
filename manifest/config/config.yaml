@@ -20,6 +20,23 @@ database:
     maxIdle:       "10"
     maxOpen:       "100"
     maxLifetime:   "30s"
-
-
 #docker run -p 3306:3306--name mysql -v /docker/mysql/conf:/etc/mysql/conf.d -v /docker/mysql/logs:/logs -v /docker/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD:123456 -d mysql
+
+redis:
+  # data save part
+  default:
+    address: 127.0.0.1:6380
+    db:      1
+    minIdle: 4   # 允许闲置的最小连接数
+    maxIdle: 8  # 允许闲置的最大连接数(0表示不限制)
+    maxActive: 16 # 最大连接数量限制(0表示不限制)
+    idleTimeout: "30m"  # 连接最大空闲时间，使用时间字符串例如30s/1m/1d
+  # lock save part
+  lock:
+    address:     127.0.0.1:6380
+    db:          2
+    minIdle: 4   # 允许闲置的最小连接数
+    maxIdle: 8  # 允许闲置的最大连接数(0表示不限制)
+    maxActive: 16 # 最大连接数量限制(0表示不限制)
+    idleTimeout: "30m"  # 连接最大空闲时间，使用时间字符串例如30s/1m/1d
+

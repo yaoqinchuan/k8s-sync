@@ -3,6 +3,11 @@ module k8s-sync
 go 1.17
 
 require (
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gogf/gf/v2 v2.0.6
+)
+
+require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/clbanning/mxj/v2 v2.5.5 // indirect
@@ -10,8 +15,6 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-redis/redis/v8 v8.11.4 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
-	github.com/gogf/gf/v2 v2.0.6 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grokify/html-strip-tags-go v0.0.1 // indirect
 	github.com/longbridgeapp/sqlparser v0.3.1 // indirect
