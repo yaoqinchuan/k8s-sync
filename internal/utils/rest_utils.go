@@ -13,11 +13,16 @@ type restResult struct {
 }
 
 func RestSuccess(body interface{}, r *ghttp.Request) {
+	data, err := gjson.Marshal(body)
+	if err != nil {
+		RestFailed(err.Error(), r)
+		return
+	}
 	result := restResult{
 		Status:       "OK",
 		ErrorCode:    "200",
 		ErrorMessage: "",
-		Data:         gjson.Marshal(body),
+		Data:         data,
 	}
 	r.Response.Write(result)
 }

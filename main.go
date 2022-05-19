@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
+	"k8s-sync/internal/controller/v1"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/gctx"
-	"k8s-sync/internal/controller/v1"
 )
 
 type inputArgs struct {
@@ -30,7 +32,7 @@ var args = inputArgs{}
 func ApiHandlerRegister(s *ghttp.Server) {
 	controller.AccountApiHandlerRegister(s)
 }
-func (c *cMain) CmdInit(in cCmdInput) (out *cCmdOutput, err error) {
+func (c *cMain) CmdInit(ctx context.Context, in cCmdInput) (out *cCmdOutput, err error) {
 	args.Port = in.Port
 	args.Mode = in.Mode
 	s := g.Server("sync-k8s")
