@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"github.com/gogf/gf/v2/os/glog"
 )
 
@@ -13,7 +14,7 @@ func init() {
 
 // 使用配置的方式來初始化錯誤日誌
 func getLogger() *glog.Logger {
-
+	fmt.Println("start to init log config.")
 	logger := glog.New()
 	configMap := make(map[string]interface{}, 2)
 	configMap["rotateSize"] = "100M"
@@ -27,7 +28,7 @@ func getLogger() *glog.Logger {
 		return nil
 	}
 
-	loggerPath := "/var/log"
+	loggerPath := "var/log"
 	err = logger.SetPath(loggerPath)
 	if err != nil {
 		glog.Panic(context.Background(), "init error log path failed, error:"+err.Error())
@@ -38,11 +39,12 @@ func getLogger() *glog.Logger {
 
 	// 打印栈信息
 	logger.SetStack(true)
-	err = logger.SetLevelStr("INFO")
+	logger.SetLevel(glog.LEVEL_ALL)
 	if err != nil {
 		glog.Panic(context.Background(), "init error log level failed, error:"+err.Error())
 	}
 	logger.SetWriterColorEnable(true)
-
+	logger.SetAsync(false)
+	fmt.Println("success to init log config.")
 	return logger
 }

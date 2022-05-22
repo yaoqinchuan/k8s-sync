@@ -16,11 +16,11 @@ database:
     pass: "123456"
     type: "mysql"
     charset:       "utf8"
-    timezone:      "local"
+    timezone:      "Asia/Shanghai"
     maxIdle:       "10"
     maxOpen:       "100"
     maxLifetime:   "30s"
-#docker run -p 3306:3306--name mysql -v /docker/mysql/conf:/etc/mysql/conf.d -v /docker/mysql/logs:/logs -v /docker/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD:123456 -d mysql
+#docker run -p 3306:3306 --name mysql -v /docker/mysql/conf:/etc/mysql/conf.d -v /docker/mysql/logs:/logs -v /docker/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD:123456 -d mysql
 
 redis:
   # data save part

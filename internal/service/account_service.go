@@ -30,7 +30,7 @@ func (*AccountService) GetByName(ctx context.Context, name string) (*model.Accou
 	return accountModel, nil
 }
 
-func (*AccountService) GetByUserId(ctx context.Context, userId int) (*model.AccountModel, error) {
+func (*AccountService) GetByUserId(ctx context.Context, userId string) (*model.AccountModel, error) {
 	accountDo, err := accountDao.GetByUserId(ctx, userId)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,10 @@ func (*AccountService) AddAccount(ctx context.Context, data *model.AccountModel)
 	}
 	return accountDao.AddAccount(ctx, accountDo)
 }
-func (*AccountService) UpdateAccountByUserId(ctx context.Context, updateMap *gdb.Map, userId int64) (int64, error) {
+func (*AccountService) UpdateAccountByUserId(ctx context.Context, updateMap *gdb.Map, userId string) (int64, error) {
 	return accountDao.UpdateAccountByUserId(ctx, updateMap, userId)
 }
 
-func (*AccountService) DeleteByUserId(ctx context.Context, userId int64) (int64, error) {
+func (*AccountService) DeleteByUserId(ctx context.Context, userId string) (int64, error) {
 	return accountDao.DeleteByUserId(ctx, userId)
 }
