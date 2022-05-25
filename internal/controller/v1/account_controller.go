@@ -2,9 +2,9 @@ package controller
 
 import (
 	"encoding/json"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gtime"
-	"github.com/gogf/gf/v2/util/gconv"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service"
 	"k8s-sync/internal/utils"
@@ -70,11 +70,11 @@ func updateAccount(r *ghttp.Request) {
 		utils.RestFailed("request body is empty.", r)
 		return
 	}
-	accountId := r.Get("account_id")
+	accountId := r.Get("userId")
 	if nil == accountId {
-		utils.RestFailed("account id is empty.", r)
+		utils.RestFailed("user id is empty.", r)
 	}
-	var accountModel *model.AccountModel
+	var accountModel = &model.AccountModel{}
 	err := json.Unmarshal(bodyBytes, accountModel)
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
@@ -85,9 +85,22 @@ func updateAccount(r *ghttp.Request) {
 		utils.RestFailed(err.Error(), r)
 		return
 	}
-	accountModel.Modifier = userInfo.UserName
-	accountModel.UpdateAt = gtime.Now()
-	saveMap := gconv.Map(*accountModel)
+
+	saveMap := g.Map{}
+	if "" != accountModel.UserRole {
+		saveMap["userRole"] = accountModel.UserRole
+	}
+	if "" != accountModel.UserName {
+		saveMap["userName"] = accountModel.UserName
+	}
+	if "" != accountModel.UserId {
+		saveMap["userId"] = accountModel.UserId
+	}
+	if "" != accountModel.Email {
+		saveMap["email"] = accountModel.Email
+	}
+	saveMap["modifier"] = userInfo.UserName
+	saveMap["updateAt"] = gtime.Now()
 	id, err := accountService.UpdateAccountByUserId(r.Context(), &saveMap, accountId.String())
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
