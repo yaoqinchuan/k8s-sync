@@ -46,6 +46,9 @@ func apiHandlerRegister(group *ghttp.RouterGroup) {
 	group.Group("/maintenance", func(group *ghttp.RouterGroup) {
 		controller.MaintenanceApiHandlerRegister(group)
 	})
+	// workspace controller
+	controller.WorkspaceApiHandlerRegister(group)
+
 }
 func heathCheckRegister(group *ghttp.RouterGroup) {
 	group.GET("healthy", func(r *ghttp.Request) {

@@ -10,7 +10,7 @@ import (
 	"k8s-sync/internal/utils"
 )
 
-var accountDao = service.AccountService{}
+var accountService = service.AccountService{}
 
 func AccountApiHandlerRegister(group *ghttp.RouterGroup) {
 	group.POST("account", func(r *ghttp.Request) { addAccount(r) })
@@ -24,9 +24,9 @@ func getAccount(r *ghttp.Request) {
 	var accountModel *model.AccountModel
 	var err error
 	if accountName := r.Get("userName"); nil != accountName {
-		accountModel, err = accountDao.GetByName(r.Context(), accountName.String())
+		accountModel, err = accountService.GetByName(r.Context(), accountName.String())
 	} else if accountId := r.Get("userId"); nil != accountId {
-		accountModel, err = accountDao.GetByUserId(r.Context(), accountId.String())
+		accountModel, err = accountService.GetByUserId(r.Context(), accountId.String())
 	}
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
@@ -56,7 +56,7 @@ func addAccount(r *ghttp.Request) {
 	accountModel.Modifier = userInfo.UserName
 	accountModel.UpdateAt = gtime.Now()
 	accountModel.CreateAt = gtime.Now()
-	id, err := accountDao.AddAccount(r.Context(), accountModel)
+	id, err := accountService.AddAccount(r.Context(), accountModel)
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
 		return
@@ -88,7 +88,7 @@ func updateAccount(r *ghttp.Request) {
 	accountModel.Modifier = userInfo.UserName
 	accountModel.UpdateAt = gtime.Now()
 	saveMap := gconv.Map(*accountModel)
-	id, err := accountDao.UpdateAccountByUserId(r.Context(), &saveMap, accountId.String())
+	id, err := accountService.UpdateAccountByUserId(r.Context(), &saveMap, accountId.String())
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
 		return
@@ -99,7 +99,7 @@ func updateAccount(r *ghttp.Request) {
 func deleteAccount(r *ghttp.Request) {
 	var err error
 	if accountId := r.Get("userId"); nil != accountId {
-		_, err = accountDao.DeleteByUserId(r.Context(), accountId.String())
+		_, err = accountService.DeleteByUserId(r.Context(), accountId.String())
 	}
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
