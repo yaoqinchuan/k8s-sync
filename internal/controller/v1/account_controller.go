@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service"
@@ -12,18 +13,19 @@ import (
 var accountDao = service.AccountService{}
 
 func AccountApiHandlerRegister(group *ghttp.RouterGroup) {
-	group.GET("account", func(r *ghttp.Request) { getAccount(r) })
 	group.POST("account", func(r *ghttp.Request) { addAccount(r) })
 	group.DELETE("account", func(r *ghttp.Request) { deleteAccount(r) })
 	group.PUT("account", func(r *ghttp.Request) { updateAccount(r) })
+	group.GET("account", func(r *ghttp.Request) { getAccount(r) })
+
 }
 
 func getAccount(r *ghttp.Request) {
 	var accountModel *model.AccountModel
 	var err error
-	if accountName := r.Get("account_name"); nil != accountName {
+	if accountName := r.Get("userName"); nil != accountName {
 		accountModel, err = accountDao.GetByName(r.Context(), accountName.String())
-	} else if accountId := r.Get("account_id"); nil != accountId {
+	} else if accountId := r.Get("userId"); nil != accountId {
 		accountModel, err = accountDao.GetByUserId(r.Context(), accountId.String())
 	}
 	if err != nil {
@@ -40,12 +42,20 @@ func addAccount(r *ghttp.Request) {
 		utils.RestFailed("request body is empty.", r)
 		return
 	}
-	var accountModel *model.AccountModel
+	var accountModel = &model.AccountModel{}
 	err := json.Unmarshal(bodyBytes, accountModel)
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
 		return
 	}
+	userInfo, err := utils.GetUserInfoByContext(r.Context())
+	if err != nil {
+		utils.RestFailed(err.Error(), r)
+		return
+	}
+	accountModel.Modifier = userInfo.UserName
+	accountModel.UpdateAt = gtime.Now()
+	accountModel.CreateAt = gtime.Now()
 	id, err := accountDao.AddAccount(r.Context(), accountModel)
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
@@ -70,6 +80,13 @@ func updateAccount(r *ghttp.Request) {
 		utils.RestFailed(err.Error(), r)
 		return
 	}
+	userInfo, err := utils.GetUserInfoByContext(r.Context())
+	if err != nil {
+		utils.RestFailed(err.Error(), r)
+		return
+	}
+	accountModel.Modifier = userInfo.UserName
+	accountModel.UpdateAt = gtime.Now()
 	saveMap := gconv.Map(*accountModel)
 	id, err := accountDao.UpdateAccountByUserId(r.Context(), &saveMap, accountId.String())
 	if err != nil {
@@ -81,7 +98,7 @@ func updateAccount(r *ghttp.Request) {
 }
 func deleteAccount(r *ghttp.Request) {
 	var err error
-	if accountId := r.Get("account_id"); nil != accountId {
+	if accountId := r.Get("userId"); nil != accountId {
 		_, err = accountDao.DeleteByUserId(r.Context(), accountId.String())
 	}
 	if err != nil {

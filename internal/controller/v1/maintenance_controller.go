@@ -18,7 +18,7 @@ func getEncodeStringByBase64(r *ghttp.Request) {
 	if plaintext == "" {
 		return
 	}
-	plaintextEncode := gbase64.Encode([]byte(plaintext))
+	plaintextEncode := gbase64.EncodeString(plaintext)
 	utils.RestSuccess(plaintextEncode, r)
 	return
 }
@@ -26,13 +26,14 @@ func getEncodeStringByBase64(r *ghttp.Request) {
 func getDecodeStringByBase64(r *ghttp.Request) {
 	encodeText := r.GetHeader("text")
 	if encodeText == "" {
+		utils.RestFailed("text is needed", r)
 		return
 	}
-	plaintext, err := gbase64.DecodeString(encodeText)
+	plaintext, err := gbase64.Decode([]byte(encodeText))
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
 		return
 	}
-	utils.RestSuccess(plaintext, r)
+	utils.RestSuccess(string(plaintext), r)
 	return
 }

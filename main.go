@@ -29,8 +29,8 @@ type cCmdInput struct {
 type cCmdOutput struct{}
 
 var args = inputArgs{
-	Port: 8080
-	Mode: "dev"
+	Port: 8080,
+	Mode: "dev",
 }
 
 func corsMiddleware(r *ghttp.Request) {
@@ -39,11 +39,11 @@ func corsMiddleware(r *ghttp.Request) {
 }
 
 func apiHandlerRegister(group *ghttp.RouterGroup) {
+	group.Middleware(middleware.AuthMiddleware)
 	group.Group("/admin", func(group *ghttp.RouterGroup) {
 		controller.AccountApiHandlerRegister(group)
 	})
 	group.Group("/maintenance", func(group *ghttp.RouterGroup) {
-		group.Middleware(middleware.AuthMiddleware)
 		controller.MaintenanceApiHandlerRegister(group)
 	})
 }

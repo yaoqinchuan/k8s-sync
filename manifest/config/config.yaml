@@ -9,6 +9,7 @@ database:
     level:  "all"
     stdout: true
   default:
+    name: "k8s_sync"
     debug: true
     host: "127.0.0.1"
     port: "3306"

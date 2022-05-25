@@ -8,9 +8,9 @@ import (
 )
 
 func AuthMiddleware(r *ghttp.Request) {
-	userIdEncode := r.GetHeader("userId")
+	userIdEncode := r.GetHeader("Auth-User")
 	if "" == userIdEncode {
-		utils.RestFailed("userId is needed", r)
+		utils.RestFailed("Auth-User is needed", r)
 		return
 	}
 	userId, err := gbase64.DecodeString(userIdEncode)
@@ -28,5 +28,6 @@ func AuthMiddleware(r *ghttp.Request) {
 		utils.RestFailed("you are forbidden to request k8s-sync service, please contact admin.", r)
 		return
 	}
+	r.SetCtxVar("userInfo", userInfo)
 	r.Middleware.Next()
 }

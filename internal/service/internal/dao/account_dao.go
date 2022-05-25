@@ -13,11 +13,11 @@ type AccountDao struct {
 
 func (*AccountDao) GetByName(ctx context.Context, name string) (*do.Account, error) {
 	connect := g.DB("default")
-	record, err := connect.GetOne(ctx, fmt.Sprint("select * from account where name = ? limit 1"), name)
+	record, err := connect.GetOne(ctx, fmt.Sprint("select * from account where user_name = ? limit 1"), name)
 	if err != nil {
 		return nil, err
 	}
-	var result *do.Account
+	var result = &do.Account{}
 	err = record.Struct(result)
 	if err != nil {
 		return nil, err
@@ -27,11 +27,11 @@ func (*AccountDao) GetByName(ctx context.Context, name string) (*do.Account, err
 
 func (*AccountDao) GetByUserId(ctx context.Context, userId string) (*do.Account, error) {
 	connect := g.DB("default")
-	record, err := connect.GetOne(ctx, fmt.Sprint("select * from account where user_id = ? limit 1"), userId)
+	record, err := connect.GetOne(ctx, fmt.Sprint("select * from account where user_id = ?"), userId)
 	if err != nil {
 		return nil, err
 	}
-	var result *do.Account
+	var result = &do.Account{}
 	err = record.Struct(result)
 	if err != nil {
 		return nil, err
