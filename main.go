@@ -50,21 +50,20 @@ func apiHandlerRegister(group *ghttp.RouterGroup) {
 	controller.WorkspaceApiHandlerRegister(group)
 
 }
-func heathCheckRegister(group *ghttp.RouterGroup) {
-	group.GET("healthy", func(r *ghttp.Request) {
-		r.Response.Write("ok")
-	})
-}
+
 func (c *cMain) CmdInit(ctx context.Context, in cCmdInput) (out *cCmdOutput, err error) {
 	args.Port = in.Port
 	args.Mode = in.Mode
 	s := g.Server("sync-k8s")
 	s.SetPort(args.Port)
+	s.BindHandler("/api/v1/healthy", func(r *ghttp.Request) {
+		r.Response.Write("ok")
+	})
 	s.Group("/api/v1", func(group *ghttp.RouterGroup) {
 		group.Middleware(middleware.ApiRequestRecord)
 		group.Middleware(corsMiddleware)
 		apiHandlerRegister(group)
-		heathCheckRegister(group)
+
 	})
 
 	s.Run()

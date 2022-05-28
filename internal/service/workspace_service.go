@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"github.com/gogf/gf/v2/database/gdb"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service/internal/dao"
@@ -22,12 +23,15 @@ func (*WorkspaceService) GetWorkspaceByName(ctx context.Context, name string) (*
 	if nil == workspaceDo || err == sql.ErrNoRows {
 		return nil, nil
 	}
-
+	spec := &model.WorkspaceSpecModel{}
+	if err := json.Unmarshal([]byte(workspaceDo.Spec), spec); nil != err {
+		return nil, err
+	}
 	accountModel := &model.WorkspaceModel{
 		Id:         workspaceDo.Id,
 		Name:       workspaceDo.Name,
 		Attributes: workspaceDo.Attributes,
-		Spec:       workspaceDo.Spec,
+		Spec:       spec,
 		Runtime:    workspaceDo.Runtime,
 		Status:     workspaceDo.Status,
 		CreateAt:   workspaceDo.CreateAt,
@@ -45,11 +49,16 @@ func (*WorkspaceService) GetWorkspaceById(ctx context.Context, workspaceId int) 
 	if nil == workspaceDo || err == sql.ErrNoRows {
 		return nil, nil
 	}
+	spec := &model.WorkspaceSpecModel{}
+	if err := json.Unmarshal([]byte(workspaceDo.Spec), spec); nil != err {
+		return nil, err
+	}
+
 	accountModel := &model.WorkspaceModel{
 		Id:         workspaceDo.Id,
 		Name:       workspaceDo.Name,
 		Attributes: workspaceDo.Attributes,
-		Spec:       workspaceDo.Spec,
+		Spec:       spec,
 		Runtime:    workspaceDo.Runtime,
 		Status:     workspaceDo.Status,
 		CreateAt:   workspaceDo.CreateAt,
@@ -60,11 +69,15 @@ func (*WorkspaceService) GetWorkspaceById(ctx context.Context, workspaceId int) 
 }
 
 func (*WorkspaceService) AddWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) (int64, error) {
+	spec, err := json.Marshal(workspaceModel.Spec)
+	if err != nil {
+		return 0, err
+	}
 	workspaceDo := &do.WorkspaceDo{
 		Id:         workspaceModel.Id,
 		Name:       workspaceModel.Name,
 		Attributes: workspaceModel.Attributes,
-		Spec:       workspaceModel.Spec,
+		Spec:       string(spec),
 		Runtime:    workspaceModel.Runtime,
 		Status:     workspaceModel.Status,
 		CreateAt:   workspaceModel.CreateAt,

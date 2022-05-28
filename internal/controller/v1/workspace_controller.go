@@ -36,6 +36,21 @@ func getWorkspace(r *ghttp.Request) {
 	return
 }
 
+func startWorkspaceByNameOrId(r *ghttp.Request) {
+	var workspaceModel *model.WorkspaceModel
+	var err error
+	if workspaceName := r.Get("name"); nil != workspaceName {
+		workspaceModel, err = workspaceService.GetWorkspaceByName(r.Context(), workspaceName.String())
+	} else if workspaceId := r.Get("id"); nil != workspaceId {
+		workspaceModel, err = workspaceService.GetWorkspaceById(r.Context(), workspaceId.Int())
+	}
+	if err != nil {
+		utils.RestFailed(err.Error(), r)
+		return
+	}
+	utils.RestSuccess(workspaceModel, r)
+	return
+}
 func addWorkspace(r *ghttp.Request) {
 	bodyBytes := r.GetBody()
 	if len(bodyBytes) == 0 {
@@ -64,6 +79,7 @@ func addWorkspace(r *ghttp.Request) {
 	utils.RestSuccess(id, r)
 	return
 }
+
 func updateWorkspace(r *ghttp.Request) {
 	bodyBytes := r.GetBody()
 	if len(bodyBytes) == 0 {
@@ -96,6 +112,7 @@ func updateWorkspace(r *ghttp.Request) {
 	utils.RestSuccess(id, r)
 	return
 }
+
 func deleteWorkspace(r *ghttp.Request) {
 	var err error
 	if accountId := r.Get("id"); nil != accountId {
