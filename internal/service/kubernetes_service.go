@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"k8s-sync/internal/model"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateStatefulSet(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (*appsV1.StatefulSet, error) {
+func GenerateStatefulSet(workspaceSpecModel *model.WorkspaceSpecModel) *appsV1.StatefulSet {
 	var containers []coreV1.Container
 	for i := 0; i < len(workspaceSpecModel.Containers); i++ {
 		var envs []coreV1.EnvVar
@@ -84,8 +86,10 @@ func CreateStatefulSet(ctx context.Context, clientSet *kubernetes.Clientset, wor
 		selectors = append(selectors, selector)
 	}
 	stateSet := &appsV1.StatefulSet{
+		TypeMeta: metaV1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"},
 		ObjectMeta: metaV1.ObjectMeta{
-			Name: fmt.Sprintf("sts-%v", workspaceSpecModel.Name),
+			Name:      fmt.Sprintf("sts-%v", workspaceSpecModel.Name),
+			Namespace: workspaceSpecModel.NameSpace,
 		},
 		Spec: appsV1.StatefulSetSpec{
 			Selector: &metaV1.LabelSelector{
@@ -116,13 +120,114 @@ func CreateStatefulSet(ctx context.Context, clientSet *kubernetes.Clientset, wor
 			},
 		},
 	}
-	return clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, stateSet, metaV1.CreateOptions{})
+	return stateSet
 }
 
-func CreateService(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (*coreV1.Service, error) {
+func StartWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	if pvc := GeneratePVC(workspaceSpecModel); pvc != nil {
+		_, err := clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Create(ctx, pvc, metaV1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	_, err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Create(ctx, GenerateService(workspaceSpecModel), metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckWorkspaceRunning(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
+	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func RestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	_, err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Create(ctx, GenerateService(workspaceSpecModel), metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	err = clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("pvc-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("svc-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func StopWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("svc-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateWorkspace(workspaceSpecModel *model.WorkspaceSpecModel) (*coreV1.List, error) {
+	statefulSet, err := json.Marshal(GenerateStatefulSet(workspaceSpecModel))
+	if nil != err {
+		return nil, err
+	}
+
+	service, err := json.Marshal(GenerateService(workspaceSpecModel))
+	if nil != err {
+		return nil, err
+	}
+	var pvc []byte
+	if pvcGenerated := GeneratePVC(workspaceSpecModel); pvcGenerated != nil {
+		pvc, err = json.Marshal(pvcGenerated)
+		if nil != err {
+			return nil, err
+		}
+	}
+
+	workspaceSpec := coreV1.List{
+		TypeMeta: metaV1.TypeMeta{Kind: "List", APIVersion: "v1"},
+		Items: []runtime.RawExtension{
+			{Raw: statefulSet}, {
+				Raw: service,
+			}},
+	}
+	if 0 != len(pvc) {
+		workspaceSpec.Items = append(workspaceSpec.Items, runtime.RawExtension{
+			Raw: service,
+		})
+	}
+	return &workspaceSpec, nil
+}
+
+func GenerateService(workspaceSpecModel *model.WorkspaceSpecModel) *coreV1.Service {
 	service := &coreV1.Service{
+		TypeMeta: metaV1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metaV1.ObjectMeta{
-			Name: fmt.Sprintf("svc-%v", workspaceSpecModel.Name),
+			Name:      fmt.Sprintf("svc-%v", workspaceSpecModel.Name),
+			Namespace: workspaceSpecModel.NameSpace,
 		},
 		Spec: coreV1.ServiceSpec{
 			Type:     coreV1.ServiceTypeNodePort,
@@ -136,20 +241,22 @@ func CreateService(ctx context.Context, clientSet *kubernetes.Clientset, workspa
 			},
 		},
 	}
-	return clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Create(ctx, service, metaV1.CreateOptions{})
+	return service
 }
 
-func CreatePVC(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (*coreV1.PersistentVolumeClaim, error) {
+func GeneratePVC(workspaceSpecModel *model.WorkspaceSpecModel) *coreV1.PersistentVolumeClaim {
 	if "" == workspaceSpecModel.PVCCapacity {
-		return nil, nil
+		return nil
 	}
 	requests := coreV1.ResourceList{}
 	requests[coreV1.ResourceMemory] = resource.MustParse(workspaceSpecModel.PVCCapacity)
 	accessModes := make([]coreV1.PersistentVolumeAccessMode, 1)
 	accessModes = append(accessModes, coreV1.ReadWriteOnce)
 	pvc := &coreV1.PersistentVolumeClaim{
+		TypeMeta: metaV1.TypeMeta{Kind: "PersistentVolumeClaim", APIVersion: "v1"},
 		ObjectMeta: metaV1.ObjectMeta{
-			Name: fmt.Sprintf("pvc-%v", workspaceSpecModel.Name),
+			Name:      fmt.Sprintf("pvc-%v", workspaceSpecModel.Name),
+			Namespace: workspaceSpecModel.NameSpace,
 		},
 		Spec: coreV1.PersistentVolumeClaimSpec{
 			AccessModes: accessModes,
@@ -160,13 +267,5 @@ func CreatePVC(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSp
 			StorageClassName: &workspaceSpecModel.StorageClass,
 		},
 	}
-	return clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Create(ctx, pvc, metaV1.CreateOptions{})
-}
-
-func deleteStatefulSet(ctx context.Context, clientSet *kubernetes.Clientset, workspaceName string, namespace string) error {
-	return clientSet.AppsV1().StatefulSets(namespace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceName), metaV1.DeleteOptions{})
-}
-
-func deleteService(ctx context.Context, clientSet *kubernetes.Clientset, workspaceName string, namespace string) {
-	clientSet.CoreV1().Services(namespace).Delete(ctx, fmt.Sprintf("svc-%v", workspaceName), metaV1.DeleteOptions{})
+	return pvc
 }

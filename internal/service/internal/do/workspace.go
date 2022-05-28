@@ -6,6 +6,7 @@ type WorkspaceDo struct {
 	Id         int         `json:"id"`
 	Name       string      `json:"name"`
 	Attributes string      `json:"attributes"`
+	Input      string      `json:"input"`
 	Spec       string      `json:"spec"`
 	Runtime    string      `json:"runtime"`
 	Status     string      `json:"status"`
