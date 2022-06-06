@@ -123,7 +123,7 @@ func GenerateStatefulSet(workspaceSpecModel *model.WorkspaceSpecModel) *appsV1.S
 	return stateSet
 }
 
-func StartWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func doStartWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
 	if err != nil {
 		return err
@@ -141,8 +141,16 @@ func StartWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, worksp
 	return nil
 }
 
+func doRestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func CheckWorkspaceRunning(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
-	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.GetOptions{})
+	_, err := clientSet.CoreV1().Pods(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -161,7 +169,7 @@ func RestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, work
 	return nil
 }
 
-func DeleteWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func doDeleteWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
 	if err != nil {
 		return err
@@ -177,7 +185,7 @@ func DeleteWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, works
 	return nil
 }
 
-func StopWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func doStopWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
 	if err != nil {
 		return err

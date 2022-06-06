@@ -64,7 +64,29 @@ func (*WorkspaceDao) UpdateWorkspaceByName(ctx context.Context, updateMap *gdb.M
 	rowAffect, _ := result.RowsAffected()
 	return rowAffect, nil
 }
+func (*WorkspaceDao) UpdateWorkspaceStatusById(ctx context.Context, workspaceStatus string, workspaceId int) (int64, error) {
+	connect := g.DB("default")
+	result, err := connect.Update(ctx, "workspace", g.Map{
+		"status": workspaceStatus,
+	}, "id=?", workspaceId)
+	if err != nil {
+		return -1, err
+	}
+	rowAffect, _ := result.RowsAffected()
+	return rowAffect, nil
+}
 
+func (*WorkspaceDao) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, workspaceId int) (int64, error) {
+	connect := g.DB("default")
+	result, err := connect.Update(ctx, "workspace", g.Map{
+		"status": newStatus,
+	}, "id=? and status=?", workspaceId, oldStatus)
+	if err != nil {
+		return -1, err
+	}
+	rowAffect, _ := result.RowsAffected()
+	return rowAffect, nil
+}
 func (*WorkspaceDao) DeleteById(ctx context.Context, workspaceId int) (int64, error) {
 	connect := g.DB("default")
 	result, err := connect.Delete(ctx, "workspace", "id=?", workspaceId)

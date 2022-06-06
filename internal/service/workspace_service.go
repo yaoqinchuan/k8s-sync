@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/consts"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service/internal/dao"
@@ -125,6 +127,12 @@ func (*WorkspaceService) UpdateWorkspaceById(ctx context.Context, updateMap *gdb
 	return workspaceDao.UpdateWorkspaceById(ctx, updateMap, id)
 }
 
+func (*WorkspaceService) UpdateWorkspaceStatusById(ctx context.Context, status string, id int) (int64, error) {
+	return workspaceDao.UpdateWorkspaceStatusById(ctx, status, id)
+}
+func (*WorkspaceService) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, id int) (int64, error) {
+	return workspaceDao.UpdateWorkspaceStatusWithCASById(ctx, newStatus, oldStatus, id)
+}
 func (*WorkspaceService) DeleteById(ctx context.Context, id int) (int64, error) {
 	return workspaceDao.DeleteById(ctx, id)
 }
@@ -137,18 +145,74 @@ func (workspaceService *WorkspaceService) CreateWorkspace(ctx context.Context, w
 	return nil
 }
 
-func (workspaceService *WorkspaceService) StartingWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) error {
-	workspaceModel.Status = consts.WS_STARTING
-	err := StartWorkspace(ctx, clientSet, workspaceModel.Input)
+// todo add compenennt create
+func (workspaceService *WorkspaceService) StartWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) (bool, error) {
+	startTime := gtime.Now().Timestamp()
+	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
+	err := doStartWorkspace(ctx, clientSet, workspaceModel.Input)
 	if err != nil {
-		return err
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
+		return false, err
 	}
-	return nil
+	for true {
+		running, err := CheckWorkspaceRunning(ctx, clientSet, workspaceModel.Input)
+		if err != nil {
+			return false, err
+		}
+		now := gtime.Now().Timestamp()
+		if now-startTime >= consts.STARTING_TIMEOUT {
+			workspaceModel.Status = consts.WS_STARTING_TIMEOUT
+			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
+			if err != nil {
+				return false, err
+			}
+			return false, gerror.New("start workspace timeout.")
+		}
+		if running {
+			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+	return true, nil
+}
+
+func (workspaceService *WorkspaceService) RestoringWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) (bool, error) {
+	startTime := gtime.Now().Timestamp()
+	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
+	err := doRestoreWorkspace(ctx, clientSet, workspaceModel.Input)
+	if err != nil {
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
+		return false, err
+	}
+	for true {
+		running, err := CheckWorkspaceRunning(ctx, clientSet, workspaceModel.Input)
+		if err != nil {
+			return false, err
+		}
+		now := gtime.Now().Timestamp()
+		if now-startTime >= consts.STARTING_TIMEOUT {
+			workspaceModel.Status = consts.WS_STARTING_TIMEOUT
+			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
+			if err != nil {
+				return false, err
+			}
+			return false, gerror.New("start workspace timeout.")
+		}
+		if running {
+			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
+			if err != nil {
+				return false, err
+			}
+		}
+	}
+	return true, nil
 }
 
 func (workspaceService *WorkspaceService) StoppingWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) error {
 	workspaceModel.Status = consts.WS_STOPPING
-	err := StopWorkspace(ctx, clientSet, workspaceModel.Input)
+	err := doStopWorkspace(ctx, clientSet, workspaceModel.Input)
 	if err != nil {
 		return err
 	}
@@ -157,7 +221,7 @@ func (workspaceService *WorkspaceService) StoppingWorkspace(ctx context.Context,
 
 func (workspaceService *WorkspaceService) DeletingWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) error {
 	workspaceModel.Status = consts.WS_DELETING
-	err := DeleteWorkspace(ctx, clientSet, workspaceModel.Input)
+	err := doDeleteWorkspace(ctx, clientSet, workspaceModel.Input)
 	if err != nil {
 		return err
 	}
@@ -169,7 +233,7 @@ func (workspaceService *WorkspaceService) AddAndStartWorkspace(ctx context.Conte
 	if err != nil {
 		return err
 	}
-	err = StartWorkspace(ctx, clientSet, workspaceModel.Input)
+	err = doStartWorkspace(ctx, clientSet, workspaceModel.Input)
 	if err != nil {
 		return err
 	}
