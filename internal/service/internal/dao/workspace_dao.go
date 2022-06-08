@@ -24,7 +24,7 @@ func (*WorkspaceDao) GetWorkspaceByName(ctx context.Context, name string) (*do.W
 	}
 	return result, nil
 }
-func (*WorkspaceDao) GetWorkspaceById(ctx context.Context, workspaceId int) (*do.WorkspaceDo, error) {
+func (*WorkspaceDao) GetWorkspaceById(ctx context.Context, workspaceId int64) (*do.WorkspaceDo, error) {
 	connect := g.DB("default")
 	record, err := connect.GetOne(ctx, fmt.Sprint("select * from workspace where id = ?"), workspaceId)
 	if err != nil {

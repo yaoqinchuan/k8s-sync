@@ -1,4 +1,4 @@
-package service
+package k8s
 
 import (
 	"context"
@@ -123,25 +123,22 @@ func GenerateStatefulSet(workspaceSpecModel *model.WorkspaceSpecModel) *appsV1.S
 	return stateSet
 }
 
-func doStartWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func DoCreateWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	if pvc := GeneratePVC(workspaceSpecModel); pvc != nil {
-		_, err := clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Create(ctx, pvc, metaV1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	_, err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Create(ctx, GenerateService(workspaceSpecModel), metaV1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func doRestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func DoCreatePVC(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	_, err := clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Create(ctx, GeneratePVC(workspaceSpecModel), metaV1.CreateOptions{})
+	return err
+}
+
+func DoCreateSVC(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+	_, err := clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Create(ctx, GenerateService(workspaceSpecModel), metaV1.CreateOptions{})
+	return err
+}
+
+func DoRestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
 	if err != nil {
 		return err
@@ -157,6 +154,21 @@ func CheckWorkspaceRunning(ctx context.Context, clientSet *kubernetes.Clientset,
 	return true, nil
 }
 
+func CheckServiceExist(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
+	_, err := clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func CheckPVCExist(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
+	_, err := clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 func RestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	_, err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Create(ctx, GenerateStatefulSet(workspaceSpecModel), metaV1.CreateOptions{})
 	if err != nil {
@@ -169,23 +181,21 @@ func RestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, work
 	return nil
 }
 
-func doDeleteWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
-	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	err = clientSet.CoreV1().PersistentVolumeClaims(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("pvc-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	err = clientSet.CoreV1().Services(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("svc-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+func DoDeleteStatefulSet(ctx context.Context, clientSet *kubernetes.Clientset, name string, namespace string) error {
+	err := clientSet.AppsV1().StatefulSets(namespace).Delete(ctx, name, metaV1.DeleteOptions{})
+	return err
+}
+func DoDeletePVC(ctx context.Context, clientSet *kubernetes.Clientset, name string, namespace string) error {
+	err := clientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, name, metaV1.DeleteOptions{})
+	return err
 }
 
-func doStopWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
+func DoDeleteService(ctx context.Context, clientSet *kubernetes.Clientset, name string, namespace string) error {
+	err := clientSet.CoreV1().Services(namespace).Delete(ctx, fmt.Sprintf(name), metaV1.DeleteOptions{})
+	return err
+}
+
+func DoStopWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) error {
 	err := clientSet.AppsV1().StatefulSets(workspaceSpecModel.NameSpace).Delete(ctx, fmt.Sprintf("sts-%v", workspaceSpecModel.Name), metaV1.DeleteOptions{})
 	if err != nil {
 		return err

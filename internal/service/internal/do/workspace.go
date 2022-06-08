@@ -10,6 +10,7 @@ type WorkspaceDo struct {
 	Spec       string      `json:"spec"`
 	Runtime    string      `json:"runtime"`
 	Status     string      `json:"status"`
+	Temporary  int         `json:"temporary"`
 	Creator    string      `json:"creator"`
 	Modifier   string      `json:"modifier"`
 	Deleted    int         `json:"deleted"`

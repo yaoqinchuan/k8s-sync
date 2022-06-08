@@ -10,6 +10,7 @@ type WorkspaceModel struct {
 	Input      *WorkspaceSpecModel `json:"input" v:"required" c:"spec" p:"spec"`
 	Runtime    string              `json:"runtime" v:"required" c:"runtime" p:"runtime"`
 	Status     string              `json:"status" v:"required" c:"status" p:"status"`
+	Temporary  int                 `json:"temporary" v:"required" c:"temporary" p:"temporary"`
 	Creator    string              `json:"creator" v:"required" c:"creator" p:"creator"`
 	Modifier   string              `json:"modifier" v:"required" c:"modifier" p:"modifier"`
 	Deleted    int                 `json:"deleted" v:"required" c:"deleted" p:"deleted"`
