@@ -9,6 +9,8 @@ import (
 	"k8s-sync/internal/service/internal/dao"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/utils"
+	"os"
+	"os/exec"
 	"time"
 )
 
@@ -26,6 +28,8 @@ const (
 	TASK_STATUS_FAILED  = "Failed"
 	TASK_STATUS_TIMEOUT = "Timeout"
 	TASK_STATUS_SUCCESS = "Success"
+
+	TASK_NAME_WORKSPACE_OPS = "TASK_NAME_WORKSPACE_OPS"
 )
 
 func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do.AsyncTask) {
@@ -35,10 +39,22 @@ func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do
 			utils.Logger.Error(ctx, fmt.Sprintf("execute task %v failed, error %v", task.Id, err))
 		}
 	}()
+	taskPid := os.Getpid()
 
 	gtimer.AddTimes(ctx, time.Second, 10, func(ctx context.Context) {
 		if time.Duration(time.Now().UnixNano()-task.TaskStartTime.UnixNano()).Seconds() > task.TaskTimeoutTime {
-
+			cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("kill -9 %v", taskPid))
+			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
+				"task_start_time": gtime.Now(),
+				"status":          TASK_STATUS_TIMEOUT,
+				"update_at":       gtime.Now(),
+				"error_info":      task.RetryTime + 1,
+			}, task.Id)
+			err := cmd.Run()
+			if err != nil {
+				utils.Logger.Error(ctx, fmt.Sprintf("stop task for timeout failed"))
+				gtimer.Exit()
+			}
 		}
 	})
 

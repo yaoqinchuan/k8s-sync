@@ -11,9 +11,9 @@ import (
 type AsyncTaskDao struct {
 }
 
-func (*AsyncTaskDao) GetAsyncTaskByTaskNameAndStatus(ctx context.Context, name, status string) (*[]do.AsyncTask, error) {
+func (*AsyncTaskDao) GetAsyncTaskByTaskNameAndStatus(ctx context.Context, limit int, name, status string) (*[]do.AsyncTask, error) {
 	connect := g.DB("default")
-	record, err := connect.GetArray(ctx, fmt.Sprint("select * from async_task where task_name = ? and status = ? order by id asc limit 100"), name, status)
+	record, err := connect.GetArray(ctx, fmt.Sprint("select * from async_task where task_name = ? and status = ? order by id asc limit ?"), name, status, limit)
 	if err != nil {
 		return nil, err
 	}

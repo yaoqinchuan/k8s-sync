@@ -3,7 +3,7 @@ package model
 import "github.com/gogf/gf/v2/os/gtime"
 
 type WorkspaceModel struct {
-	Id         int                 `json:"id" v:"required" c:"id" p:"id"`
+	Id         int64               `json:"id" v:"required" c:"id" p:"id"`
 	Name       string              `json:"name" v:"required" c:"name" p:"name"`
 	Attributes string              `json:"attributes" v:"required" c:"attributes" p:"attributes"`
 	Spec       string              `json:"spec" v:"required" c:"spec" p:"spec"`

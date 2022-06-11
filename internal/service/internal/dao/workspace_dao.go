@@ -76,7 +76,7 @@ func (*WorkspaceDao) UpdateWorkspaceStatusById(ctx context.Context, workspaceSta
 	return rowAffect, nil
 }
 
-func (*WorkspaceDao) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, workspaceId int) (int64, error) {
+func (*WorkspaceDao) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, workspaceId int64) (int64, error) {
 	connect := g.DB("default")
 	result, err := connect.Update(ctx, "workspace", g.Map{
 		"status": newStatus,

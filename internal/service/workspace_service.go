@@ -6,37 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gogf/gf/v2/database/gdb"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/consts"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service/internal/dao"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/service/internal/k8s"
-	"k8s-sync/internal/utils"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
-
-var clientSet *kubernetes.Clientset
-
-func init() {
-	configPath, err := utils.ConfigData.Get(context.TODO(), "k8sConfigFile")
-	if nil != err {
-		panic(err)
-	}
-	if configPath.IsEmpty() {
-		panic("k8s config cert file is empty.")
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", configPath.String())
-	if err != nil {
-		panic(err)
-	}
-	clientSet, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-}
 
 type WorkspaceService struct {
 }
@@ -133,7 +109,7 @@ func (*WorkspaceService) UpdateWorkspaceById(ctx context.Context, updateMap *gdb
 func (*WorkspaceService) UpdateWorkspaceStatusById(ctx context.Context, status string, id int) (int64, error) {
 	return workspaceDao.UpdateWorkspaceStatusById(ctx, status, id)
 }
-func (*WorkspaceService) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, id int) (int64, error) {
+func (*WorkspaceService) UpdateWorkspaceStatusWithCASById(ctx context.Context, newStatus string, oldStatus string, id int64) (int64, error) {
 	return workspaceDao.UpdateWorkspaceStatusWithCASById(ctx, newStatus, oldStatus, id)
 }
 func (*WorkspaceService) DeleteById(ctx context.Context, id int) (int64, error) {
@@ -182,50 +158,29 @@ func (workspaceService *WorkspaceService) StartWorkspace(ctx context.Context, wo
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
-	startTime := gtime.Now().Timestamp()
+
 	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 
 	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 	if err != nil {
 		return err
 	}
-	err = k8s.DoCreateWorkspace(ctx, clientSet, workspaceModel.Input)
+	err = k8s.DoCreateWorkspace(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 
-	err = k8s.DoCreatePVC(ctx, clientSet, workspaceModel.Input)
+	err = k8s.DoCreatePVC(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 
-	err = k8s.DoCreateSVC(ctx, clientSet, workspaceModel.Input)
+	err = k8s.DoCreateSVC(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
-	}
-
-	for true {
-		running, err := k8s.CheckWorkspaceRunning(ctx, clientSet, workspaceModel.Input)
-		if err != nil {
-			return err
-		}
-		now := gtime.Now().Timestamp()
-		if now-startTime >= consts.STARTING_TIMEOUT {
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_STARTING_TIMEOUT, consts.WS_STARTING, workspaceModel.Id)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		if running {
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
@@ -236,36 +191,15 @@ func (workspaceService *WorkspaceService) RestoringWorkspace(ctx context.Context
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return false, err
 	}
-	startTime := gtime.Now().Timestamp()
 	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 	if err != nil {
 		return false, err
 	}
-	err = k8s.DoRestoreWorkspace(ctx, clientSet, workspaceModel.Input)
+	err = k8s.DoRestoreWorkspace(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
 		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return false, err
-	}
-	for true {
-		running, err := k8s.CheckWorkspaceRunning(ctx, clientSet, workspaceModel.Input)
-		if err != nil {
-			return false, err
-		}
-		now := gtime.Now().Timestamp()
-		if now-startTime >= consts.STARTING_TIMEOUT {
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_STARTING_TIMEOUT, consts.WS_STARTING, workspaceModel.Id)
-			if err != nil {
-				return false, err
-			}
-			return false, gerror.New("start workspace timeout.")
-		}
-		if running {
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_RUNNING, consts.WS_STARTING, workspaceModel.Id)
-			if err != nil {
-				return false, err
-			}
-		}
 	}
 	return true, nil
 }
@@ -277,36 +211,15 @@ func (workspaceService *WorkspaceService) StoppingWorkspace(ctx context.Context,
 		return err
 	}
 	workspaceModel.Status = consts.WS_STOPPING
-	startTime := gtime.Now().Timestamp()
 	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STOPPING, workspaceModel.Id)
 	if err != nil {
 		return err
 	}
-	err = k8s.DoStopWorkspace(ctx, clientSet, workspaceModel.Input)
+	err = k8s.DoStopWorkspace(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
 		return err
 	}
-	for true {
-		running, err := k8s.CheckWorkspaceRunning(ctx, clientSet, workspaceModel.Input)
-		if err != nil {
-			return err
-		}
-		now := gtime.Now().Timestamp()
-		if now-startTime >= consts.STOPPING_TIMEOUT {
-			workspaceModel.Status = consts.WS_STOPPING_TIMEOUT
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_STOPPING_TIMEOUT, consts.WS_STOPPING, workspaceModel.Id)
-			if err != nil {
-				return err
-			}
-			return gerror.New("start workspace timeout.")
-		}
-		if !running {
-			_, err = workspaceService.UpdateWorkspaceStatusWithCASById(ctx, consts.WS_STOPPED, consts.WS_STARTING, workspaceModel.Id)
-			if err != nil {
-				return err
-			}
-		}
-	}
+
 	return nil
 }
 
@@ -325,13 +238,13 @@ func (workspaceService *WorkspaceService) DeletingWorkspace(ctx context.Context,
 	for i := 0; i < len(*workspaceComponents); i++ {
 		workspaceComponent := (*workspaceComponents)[i]
 		if workspaceComponent.Kind == consts.SERVICE {
-			err := k8s.DoDeleteService(ctx, clientSet, workspaceComponent.Name, workspaceModel.Input.NameSpace)
+			err := k8s.DoDeleteService(ctx, k8s.ClientSet, workspaceComponent.Name, workspaceModel.Input.NameSpace)
 			if err != nil {
 				return err
 			}
 		}
 		if workspaceComponent.Kind == consts.PersistentVolumeClaim {
-			err := k8s.DoDeletePVC(ctx, clientSet, workspaceComponent.Name, workspaceModel.Input.NameSpace)
+			err := k8s.DoDeletePVC(ctx, k8s.ClientSet, workspaceComponent.Name, workspaceModel.Input.NameSpace)
 			if err != nil {
 				return err
 			}

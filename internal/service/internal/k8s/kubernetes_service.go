@@ -5,13 +5,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"k8s-sync/internal/model"
+	"k8s-sync/internal/utils"
 	appsV1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
+
+var ClientSet *kubernetes.Clientset
+
+func init() {
+	configPath, err := utils.ConfigData.Get(context.TODO(), "k8sConfigFile")
+	if nil != err {
+		panic(err)
+	}
+	if configPath.IsEmpty() {
+		panic("k8s config cert file is empty.")
+	}
+	config, err := clientcmd.BuildConfigFromFlags("", configPath.String())
+	if err != nil {
+		panic(err)
+	}
+	ClientSet, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func GenerateStatefulSet(workspaceSpecModel *model.WorkspaceSpecModel) *appsV1.StatefulSet {
 	var containers []coreV1.Container
@@ -147,6 +169,21 @@ func DoRestoreWorkspace(ctx context.Context, clientSet *kubernetes.Clientset, wo
 }
 
 func CheckWorkspaceRunning(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
+	_, err := clientSet.CoreV1().Pods(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func CheckWorkspaceStopped(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
+	_, err := clientSet.CoreV1().Pods(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+func CheckWorkspaceDeleted(ctx context.Context, clientSet *kubernetes.Clientset, workspaceSpecModel *model.WorkspaceSpecModel) (bool, error) {
 	_, err := clientSet.CoreV1().Pods(workspaceSpecModel.NameSpace).Get(ctx, fmt.Sprintf("sts-%v-0", workspaceSpecModel.Name), metaV1.GetOptions{})
 	if err != nil {
 		return false, err
