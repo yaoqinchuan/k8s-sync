@@ -22,21 +22,30 @@ var (
 	asyncTaskDao = dao.AsyncTaskDao{}
 )
 
-const (
-	TASK_STAUS_PENDING  = "Pending"
-	TASK_STATUS_RUNNING = "Running"
-	TASK_STATUS_FAILED  = "Failed"
-	TASK_STATUS_TIMEOUT = "Timeout"
-	TASK_STATUS_SUCCESS = "Success"
-
-	TASK_NAME_WORKSPACE_OPS = "TASK_NAME_WORKSPACE_OPS"
-)
-
 func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do.AsyncTask) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			utils.Logger.Error(ctx, fmt.Sprintf("execute task %v failed, error %v", task.Id, err))
+
+			if task.RetryTime <= task.TotalRetryTime {
+				asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
+					"status":     TASK_STAUS_PENDING,
+					"update_at":  gtime.Now(),
+					"retry_time": task.RetryTime + 1,
+					"error_info": err,
+				}, task.Id)
+			} else {
+				asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
+					"task_end_time": gtime.Now(),
+					"status":        TASK_STATUS_FAILED,
+					"update_at":     gtime.Now(),
+					"retry_time":    task.RetryTime + 1,
+					"deleted":       1,
+					"error_info":    err,
+				}, task.Id)
+				asyncTaskService.DoOnError(ctx, task)
+			}
+			utils.Logger.Error(ctx, fmt.Sprintf("execute task %v failed, time is , error %v", task.Id, task.RetryTime, err))
 		}
 	}()
 	taskPid := os.Getpid()
@@ -48,7 +57,7 @@ func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do
 				"task_start_time": gtime.Now(),
 				"status":          TASK_STATUS_TIMEOUT,
 				"update_at":       gtime.Now(),
-				"error_info":      task.RetryTime + 1,
+				"retry_time":      task.RetryTime + 1,
 			}, task.Id)
 			err := cmd.Run()
 			if err != nil {
@@ -58,72 +67,21 @@ func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do
 		}
 	})
 
-	err := asyncTaskService.PreExec(ctx, task)
-	if err != nil {
-		if task.RetryTime <= task.TotalRetryTime {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"task_start_time": gtime.Now(),
-				"status":          TASK_STAUS_PENDING,
-				"update_at":       gtime.Now(),
-				"retry_time":      task.RetryTime + 1,
-			}, task.Id)
-		} else {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"error_info": err,
-				"status":     TASK_STATUS_FAILED,
-				"retry_time": task.RetryTime + 1,
-				"update_at":  gtime.Now(),
-			}, task.Id)
-		}
-		return
-	}
-
+	asyncTaskService.PreExec(ctx, task)
 	asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
 		"status":    TASK_STATUS_RUNNING,
 		"update_at": gtime.Now(),
 	}, task.Id)
-	err = asyncTaskService.DoExec(ctx, task)
-	if err != nil {
-		if task.RetryTime <= task.TotalRetryTime {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"status":     TASK_STAUS_PENDING,
-				"update_at":  gtime.Now(),
-				"retry_time": task.RetryTime + 1,
-			}, task.Id)
-		} else {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"error_info": err,
-				"status":     TASK_STATUS_FAILED,
-				"retry_time": task.RetryTime + 1,
-				"update_at":  gtime.Now(),
-			}, task.Id)
-			asyncTaskService.DoOnError(ctx, task)
-		}
-		return
-	}
-	err = asyncTaskService.DoOnSuccess(ctx, task)
-	if err != nil {
-		if task.RetryTime <= task.TotalRetryTime {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"status":     TASK_STAUS_PENDING,
-				"update_at":  gtime.Now(),
-				"retry_time": task.RetryTime + 1,
-			}, task.Id)
-		} else {
-			asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
-				"error_info": err,
-				"status":     TASK_STATUS_FAILED,
-				"retry_time": task.RetryTime + 1,
-				"update_at":  gtime.Now(),
-			}, task.Id)
-		}
-		return
-	}
+
+	asyncTaskService.DoExec(ctx, task)
+
+	asyncTaskService.DoOnSuccess(ctx, task)
 
 	asyncTaskDao.UpdateAsyncTaskById(ctx, &g.Map{
 		"task_end_time": gtime.Now(),
 		"status":        TASK_STATUS_SUCCESS,
 		"update_at":     gtime.Now(),
 		"retry_time":    task.RetryTime + 1,
+		"deleted":       1,
 	}, task.Id)
 }

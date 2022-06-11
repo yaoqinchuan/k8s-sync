@@ -5,18 +5,49 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/gogf/gf/v2/os/gctx"
+	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/service/internal/dao"
+	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/service/tasks"
+	"k8s-sync/internal/utils"
 )
 
 const (
-	ASYNC_TASK_INTERVAL  = 3
-	ASYNC_TASK_BATCHSIZE = 100
+	ASYNC_TASK_INTERVAL       = 3
+	WORKSPACE_OPS_TIMEOUT     = 30 * 60
+	IP_HEART_BEAT_LIFE_PERIOD = 60
 )
 
-func asyncTask(ctx context.Context) {
+func asyncWorkspaceTask(ctx context.Context) {
 	asyncDao := dao.AsyncTaskDao{}
-	result, err := asyncDao.GetAsyncTaskByTaskNameAndStatus(ctx, ASYNC_TASK_BATCHSIZE, tasks.TASK_NAME_WORKSPACE_OPS, tasks.TASK_STAUS_PENDING)
+	result, err := asyncDao.GetReadyAsyncTaskByName(ctx, tasks.TASK_NAME_WORKSPACE_OPS)
+	if err != nil {
+		utils.Logger.Error(ctx, fmt.Sprintf("query async task %v failed", tasks.TASK_NAME_WORKSPACE_OPS))
+		return
+	}
+	localIP := utils.GetLocalIp()
+	if localIP == "" {
+		utils.Logger.Error(ctx, "get local ip failed.")
+		return
+	}
+	if result == nil {
+		asyncDao.AddAsyncTask(ctx, &do.AsyncTask{
+			TaskName:              tasks.TASK_NAME_WORKSPACE_OPS,
+			TaskAttributes:        "",
+			Ip:                    localIP,
+			IpHeartBeatLifePeriod: IP_HEART_BEAT_LIFE_PERIOD,
+			Status:                tasks.TASK_STAUS_PENDING,
+			ErrorInfo:             "",
+			RetryTime:             1,
+			TotalRetryTime:        1,
+			TaskStartTime:         nil,
+			TaskTimeoutTime:       WORKSPACE_OPS_TIMEOUT,
+			TaskEndTime:           nil,
+			CreateAt:              gtime.Now(),
+			UpdateAt:              gtime.Now(),
+			Deleted:               0,
+		})
+	}
 }
 
 func init() {

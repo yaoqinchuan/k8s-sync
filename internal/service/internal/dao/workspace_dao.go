@@ -25,23 +25,23 @@ func (*WorkspaceDao) GetWorkspaceByName(ctx context.Context, name string) (*do.W
 	return result, nil
 }
 
-func (*WorkspaceDao) GetMiddleStatusWorkspace(ctx context.Context) (*[]do.WorkspaceDo, error) {
+func (*WorkspaceDao) GetMiddleStatusWorkspace(ctx context.Context) ([]*do.WorkspaceDo, error) {
 	connect := g.DB("default")
 	record, err := connect.GetArray(ctx, fmt.Sprint("select * from workspace where status in ('STARTING STOPPING DELETING RESTORING') limit 100"))
 	if err != nil {
 		return nil, err
 	}
-	var result []do.WorkspaceDo
+	var result []*do.WorkspaceDo
 	for i := 0; i < len(record); i++ {
 		var tmpResult = &do.WorkspaceDo{}
 		err = record[i].Struct(tmpResult)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, *tmpResult)
+		result = append(result, tmpResult)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
 func (*WorkspaceDao) GetWorkspaceById(ctx context.Context, workspaceId int64) (*do.WorkspaceDo, error) {

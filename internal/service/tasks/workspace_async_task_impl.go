@@ -14,18 +14,17 @@ type WorkspaceAsyncTaskImpl struct {
 var (
 	workspaceDao     = dao.WorkspaceDao{}
 	workspaceHandler = handlers.WorkspaceHandler{}
+	asyncTask        = dao.AsyncTaskDao{}
 )
 
-func (*WorkspaceAsyncTaskImpl) PreExec(ctx context.Context, task *do.AsyncTask) error {
-	return nil
+func (*WorkspaceAsyncTaskImpl) PreExec(ctx context.Context, task *do.AsyncTask) {
 }
-func (*WorkspaceAsyncTaskImpl) DoExec(ctx context.Context, task *do.AsyncTask) error {
+func (*WorkspaceAsyncTaskImpl) DoExec(ctx context.Context, task *do.AsyncTask) {
 	workspaces, err := workspaceDao.GetMiddleStatusWorkspace(ctx)
 	if err != nil {
 		panic(err)
 	}
 	workspaceHandler.BatchDisPatchHandler(ctx, workspaces)
-
 }
 func (*WorkspaceAsyncTaskImpl) DoOnSuccess(ctx context.Context, task *do.AsyncTask) error {
 	return nil

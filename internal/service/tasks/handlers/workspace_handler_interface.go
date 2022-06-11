@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service"
+	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/utils"
 	"sync"
 )
@@ -112,7 +113,7 @@ func (*WorkspaceHandler) DisPatchHandler(ctx context.Context, workspaceModel *mo
 	wg.Wait()
 }
 
-func (*WorkspaceHandler) BatchDisPatchHandler(ctx context.Context, workspaceModels []*model.WorkspaceModel) {
+func (*WorkspaceHandler) BatchDisPatchHandler(ctx context.Context, workspaceModels []*do.WorkspaceDo) {
 	if nil == workspaceModels || 0 == len(workspaceModels) {
 		return
 	}
