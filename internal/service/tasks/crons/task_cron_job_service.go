@@ -6,10 +6,12 @@ import (
 	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
+	"github.com/gogf/gf/v2/os/gtimer"
 	"k8s-sync/internal/service/internal/dao"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/service/tasks"
 	"k8s-sync/internal/utils"
+	"time"
 )
 
 const (
@@ -31,23 +33,29 @@ func asyncWorkspaceTask(ctx context.Context) {
 		return
 	}
 	if result == nil {
-		asyncDao.AddAsyncTask(ctx, &do.AsyncTask{
-			TaskName:              tasks.TASK_NAME_WORKSPACE_OPS,
-			TaskAttributes:        "",
-			Ip:                    localIP,
-			IpHeartBeatLifePeriod: IP_HEART_BEAT_LIFE_PERIOD,
-			Status:                tasks.TASK_STAUS_PENDING,
-			ErrorInfo:             "",
-			RetryTime:             1,
-			TotalRetryTime:        1,
-			TaskStartTime:         nil,
-			TaskTimeoutTime:       WORKSPACE_OPS_TIMEOUT,
-			TaskEndTime:           nil,
-			CreateAt:              gtime.Now(),
-			UpdateAt:              gtime.Now(),
-			Deleted:               0,
+		_, err := asyncDao.AddAsyncTask(ctx, &do.AsyncTask{
+			TaskName:        tasks.TASK_NAME_WORKSPACE_OPS,
+			TaskAttributes:  "",
+			Ip:              "",
+			Status:          tasks.TASK_STAUS_PENDING,
+			ErrorInfo:       "",
+			RetryTime:       1,
+			TotalRetryTime:  1,
+			TaskStartTime:   nil,
+			TaskTimeoutTime: WORKSPACE_OPS_TIMEOUT,
+			TaskEndTime:     nil,
+			CreateAt:        gtime.Now(),
+			UpdateAt:        gtime.Now(),
+			Deleted:         0,
 		})
+		if err != nil {
+			return
+		}
 	}
+
+	gtimer.AddTimes(ctx, time.Second, 10, func(ctx context.Context) {
+
+	})
 }
 
 func init() {
