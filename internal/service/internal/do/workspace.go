@@ -3,7 +3,7 @@ package do
 import "github.com/gogf/gf/v2/os/gtime"
 
 type WorkspaceDo struct {
-	Id         int         `json:"id"`
+	Id         int64       `json:"id"`
 	Name       string      `json:"name"`
 	Attributes string      `json:"attributes"`
 	Input      string      `json:"input"`

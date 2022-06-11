@@ -24,6 +24,26 @@ func (*WorkspaceDao) GetWorkspaceByName(ctx context.Context, name string) (*do.W
 	}
 	return result, nil
 }
+
+func (*WorkspaceDao) GetMiddleStatusWorkspace(ctx context.Context) (*[]do.WorkspaceDo, error) {
+	connect := g.DB("default")
+	record, err := connect.GetArray(ctx, fmt.Sprint("select * from workspace where status in ('STARTING STOPPING DELETING RESTORING') limit 100"))
+	if err != nil {
+		return nil, err
+	}
+	var result []do.WorkspaceDo
+	for i := 0; i < len(record); i++ {
+		var tmpResult = &do.WorkspaceDo{}
+		err = record[i].Struct(tmpResult)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, *tmpResult)
+	}
+
+	return &result, nil
+}
+
 func (*WorkspaceDao) GetWorkspaceById(ctx context.Context, workspaceId int64) (*do.WorkspaceDo, error) {
 	connect := g.DB("default")
 	record, err := connect.GetOne(ctx, fmt.Sprint("select * from workspace where id = ?"), workspaceId)
@@ -46,7 +66,7 @@ func (*WorkspaceDao) AddWorkspace(ctx context.Context, data *do.WorkspaceDo) (in
 	line, _ := result.LastInsertId()
 	return line, nil
 }
-func (*WorkspaceDao) UpdateWorkspaceById(ctx context.Context, updateMap *gdb.Map, workspaceId int) (int64, error) {
+func (*WorkspaceDao) UpdateWorkspaceById(ctx context.Context, updateMap *gdb.Map, workspaceId int64) (int64, error) {
 	connect := g.DB("default")
 	result, err := connect.Update(ctx, "workspace", updateMap, "id=?", workspaceId)
 	if err != nil {
@@ -64,7 +84,7 @@ func (*WorkspaceDao) UpdateWorkspaceByName(ctx context.Context, updateMap *gdb.M
 	rowAffect, _ := result.RowsAffected()
 	return rowAffect, nil
 }
-func (*WorkspaceDao) UpdateWorkspaceStatusById(ctx context.Context, workspaceStatus string, workspaceId int) (int64, error) {
+func (*WorkspaceDao) UpdateWorkspaceStatusById(ctx context.Context, workspaceStatus string, workspaceId int64) (int64, error) {
 	connect := g.DB("default")
 	result, err := connect.Update(ctx, "workspace", g.Map{
 		"status": workspaceStatus,
@@ -87,7 +107,7 @@ func (*WorkspaceDao) UpdateWorkspaceStatusWithCASById(ctx context.Context, newSt
 	rowAffect, _ := result.RowsAffected()
 	return rowAffect, nil
 }
-func (*WorkspaceDao) DeleteById(ctx context.Context, workspaceId int) (int64, error) {
+func (*WorkspaceDao) DeleteById(ctx context.Context, workspaceId int64) (int64, error) {
 	connect := g.DB("default")
 	result, err := connect.Delete(ctx, "workspace", "id=?", workspaceId)
 	if err != nil {

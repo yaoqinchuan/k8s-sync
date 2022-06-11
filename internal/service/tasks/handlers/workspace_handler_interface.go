@@ -87,7 +87,10 @@ func doWorkspaceRefreshTask(ctx context.Context, workspaceHandlerParams *model.W
 
 }
 
-func DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) {
+type WorkspaceHandler struct {
+}
+
+func (*WorkspaceHandler) DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) {
 	if nil == workspaceModel {
 		return
 	}
@@ -102,7 +105,6 @@ func DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) 
 			WorkspaceId:        workspaceModel.Id,
 			WorkspaceName:      workspaceModel.Name,
 			WorkspaceOldStatus: workspaceModel.Status,
-			TaskStatus:         WORKSPACE_TASK_PRE_EXECUTE,
 			StartTime:          gtime.Now(),
 		}
 		doWorkspaceRefreshTask(ctx, params, handler)
@@ -110,7 +112,7 @@ func DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) 
 	wg.Wait()
 }
 
-func BatchDisPatchHandler(ctx context.Context, workspaceModels []*model.WorkspaceModel) {
+func (*WorkspaceHandler) BatchDisPatchHandler(ctx context.Context, workspaceModels []*model.WorkspaceModel) {
 	if nil == workspaceModels || 0 == len(workspaceModels) {
 		return
 	}
@@ -127,7 +129,6 @@ func BatchDisPatchHandler(ctx context.Context, workspaceModels []*model.Workspac
 				WorkspaceId:        workspaceModels[index].Id,
 				WorkspaceName:      workspaceModels[index].Name,
 				WorkspaceOldStatus: workspaceModels[index].Status,
-				TaskStatus:         WORKSPACE_TASK_PRE_EXECUTE,
 				StartTime:          gtime.Now(),
 			}
 			doWorkspaceRefreshTask(ctx, params, handler)

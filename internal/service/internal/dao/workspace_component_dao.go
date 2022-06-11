@@ -11,7 +11,7 @@ import (
 type WorkspaceComponentDao struct {
 }
 
-func (*WorkspaceComponentDao) GetWorkspaceComponentByWorkspaceId(ctx context.Context, workspaceId int) (*[]do.WorkspaceComponentDo, error) {
+func (*WorkspaceComponentDao) GetWorkspaceComponentByWorkspaceId(ctx context.Context, workspaceId int64) (*[]do.WorkspaceComponentDo, error) {
 	connect := g.DB("default")
 	record, err := connect.GetArray(ctx, fmt.Sprint("select * from workspace_component where workspace_id = ?"), workspaceId)
 	if err != nil {
