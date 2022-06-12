@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/service/tasks"
 )
@@ -62,9 +63,11 @@ func (*AsyncTaskDao) UpdateAsyncTaskById(ctx context.Context, updateMap *gdb.Map
 	return rowAffect, nil
 }
 
-func (*AsyncTaskDao) UpdateAsyncTaskIpByIdCAS(ctx context.Context, newIp string, oldIp string, id int64) (int64, error) {
+func (*AsyncTaskDao) UpdateAsyncTaskIpByIdAndStatusCAS(ctx context.Context, newIp string, oldIp string,
+	newStatus string, oldStatus string, taskStartTime *gtime.Time, taskTimeoutTime int, id int64) (int64, error) {
 	connect := g.DB("default")
-	result, err := connect.Update(ctx, "async_task", "ip = ?", " ip=? and id=?", newIp, oldIp, id)
+	result, err := connect.Update(ctx, "async_task", "ip=?,status=?,task_start_time=?,task_timeout_time=?", " ip=? and id=? and status=?",
+		newIp, newStatus, taskStartTime, taskTimeoutTime, oldIp, id, oldStatus)
 	if err != nil {
 		return -1, err
 	}

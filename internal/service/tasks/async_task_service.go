@@ -45,7 +45,7 @@ func (asyncTaskService *AsyncTaskService) ExecTask(ctx context.Context, task *do
 				}, task.Id)
 				asyncTaskService.DoOnError(ctx, task)
 			}
-			utils.Logger.Error(ctx, fmt.Sprintf("execute task %v failed, time is , error %v", task.Id, task.RetryTime, err))
+			utils.Logger.Error(ctx, fmt.Sprintf("execute task %v failed, time is %v, error %v", task.Id, task.RetryTime, err))
 		}
 	}()
 	taskPid := os.Getpid()
