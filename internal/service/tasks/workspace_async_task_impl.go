@@ -14,7 +14,6 @@ type WorkspaceAsyncTaskImpl struct {
 var (
 	workspaceDao     = dao.WorkspaceDao{}
 	workspaceHandler = handlers.WorkspaceHandler{}
-	asyncTask        = dao.AsyncTaskDao{}
 )
 
 func (*WorkspaceAsyncTaskImpl) PreExec(ctx context.Context, task *do.AsyncTask) {
