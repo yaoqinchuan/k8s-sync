@@ -15,7 +15,7 @@ type AsyncTaskDao struct {
 
 func (*AsyncTaskDao) GetReadyAsyncTaskByName(ctx context.Context, name string) (*do.AsyncTask, error) {
 	connect := g.DB("default")
-	record, err := connect.GetOne(ctx, fmt.Sprint("select * from async_task where name = ? and status in (?, ?)"), name, tasks.TASK_STAUS_PENDING, tasks.TASK_STAUS_PENDING)
+	record, err := connect.GetOne(ctx, fmt.Sprint("select * from async_task where name = ? and status in (?, ?) and deleted = 0"), name, tasks.TASK_STAUS_PENDING, tasks.TASK_STAUS_PENDING)
 	if err != nil {
 		return nil, err
 	}
@@ -28,6 +28,15 @@ func (*AsyncTaskDao) GetReadyAsyncTaskByName(ctx context.Context, name string) (
 		return nil, err
 	}
 	return result, nil
+}
+
+func (*AsyncTaskDao) UpdateTimeoutAsyncTaskToReady(ctx context.Context) error {
+	connect := g.DB("default")
+	_, err := connect.Update(ctx, "async_task", "status=?", "deleted = 0 and task_timeout_time>NOW()", tasks.TASK_STAUS_PENDING)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (*AsyncTaskDao) GetAsyncTaskById(ctx context.Context, id int64) (*do.AsyncTask, error) {
@@ -77,7 +86,7 @@ func (*AsyncTaskDao) UpdateAsyncTaskIpByIdAndStatusCAS(ctx context.Context, newI
 
 func (*AsyncTaskDao) DeleteByUserId(ctx context.Context, id int64) (int64, error) {
 	connect := g.DB("default")
-	result, err := connect.Delete(ctx, "async_task", "id=?", id)
+	result, err := connect.Update(ctx, "async_task", "deleted=1", "id=?", id)
 	if err != nil {
 		return -1, err
 	}
