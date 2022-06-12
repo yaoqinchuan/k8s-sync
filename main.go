@@ -29,7 +29,7 @@ type cCmdInput struct {
 type cCmdOutput struct{}
 
 var args = inputArgs{
-	Port: 8080,
+	Port: 8088,
 	Mode: "dev",
 }
 

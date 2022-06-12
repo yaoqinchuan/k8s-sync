@@ -1,21 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: template-single
-  labels:
-    app: template-single
+  name: k8s-sync-deploy
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
-      app: template-single
+      app-name: k8s-sync
   template:
     metadata:
       labels:
-        app: template-single
+        app-name: k8s-sync
     spec:
       containers:
-        - name : main
+        - name: k8s-sync
           image: template-single
           imagePullPolicy: Always
+          readinessProbe:
+            exec:
+              command:
+                - "/bin/bash -c"
+                - "127.0.0.1:8088/api/v1/healthy"
+            initialDelaySeconds: 10     # 容器启动后多久开始探测
+            timeoutSeconds: 2           # 表示容器必须在2s内做出相应反馈给probe，否则视为探测失败
+            periodSeconds: 30           # 探测周期，每30s探测一次
+            successThreshold: 2         # 连续探测1次成功表示成功
+            failureThreshold: 10        # 连续探测3次失败表示失败
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash -c"
+                - "127.0.0.1:8088/api/v1/healthy"
+            initialDelaySeconds: 60     # 连续探测3次失败表示失败
+
+
 
