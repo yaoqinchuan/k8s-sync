@@ -6,11 +6,11 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/gconv"
 	"k8s-sync/internal/model"
-	"k8s-sync/internal/service"
+	"k8s-sync/internal/service/manager"
 	"k8s-sync/internal/utils"
 )
 
-var workspaceService = service.WorkspaceService{}
+var workspaceService = manager.WorkspaceService{}
 
 func WorkspaceApiHandlerRegister(group *ghttp.RouterGroup) {
 	group.POST("workspace", func(r *ghttp.Request) { addWorkspace(r) })

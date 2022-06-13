@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gogf/gf/v2/encoding/gbase64"
 	"github.com/gogf/gf/v2/net/ghttp"
-	"k8s-sync/internal/service"
+	"k8s-sync/internal/service/manager"
 	"k8s-sync/internal/utils"
 )
 
@@ -18,7 +18,7 @@ func AuthMiddleware(r *ghttp.Request) {
 		utils.RestFailed(err.Error(), r)
 		return
 	}
-	account := &service.AccountService{}
+	account := &manager.AccountService{}
 	userInfo, err := account.GetByUserId(r.Context(), string(userId))
 	if err != nil {
 		utils.RestFailed(err.Error(), r)

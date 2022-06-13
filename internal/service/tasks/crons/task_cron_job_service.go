@@ -23,7 +23,7 @@ var (
 )
 
 func asyncWorkspaceTask(ctx context.Context) {
-	result, err := asyncDao.GetReadyAsyncTaskByName(ctx, tasks.TASK_NAME_WORKSPACE_OPS)
+	result, err := asyncDao.GetReadyAsyncTaskByName(ctx, tasks.TASK_NAME_WORKSPACE_OPS, tasks.TASK_STAUS_PENDING, tasks.TASK_STATUS_TIMEOUT)
 	if err != nil {
 		utils.Logger.Error(ctx, fmt.Sprintf("query async task %v failed", tasks.TASK_NAME_WORKSPACE_OPS))
 		return
@@ -67,7 +67,7 @@ func asyncWorkspaceTask(ctx context.Context) {
 }
 
 func refreshTimeoutTask(ctx context.Context) {
-	err := asyncDao.UpdateTimeoutAsyncTaskToReady(ctx)
+	err := asyncDao.UpdateTimeoutAsyncTaskToReady(ctx, tasks.TASK_STAUS_PENDING)
 	if err != nil {
 		utils.Logger.Error(ctx, fmt.Sprintf("update timeout async task %v failed", tasks.TASK_NAME_WORKSPACE_OPS))
 		return

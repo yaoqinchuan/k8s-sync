@@ -6,11 +6,11 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/model"
-	"k8s-sync/internal/service"
+	"k8s-sync/internal/service/manager"
 	"k8s-sync/internal/utils"
 )
 
-var accountService = service.AccountService{}
+var accountService = manager.AccountService{}
 
 func AccountApiHandlerRegister(group *ghttp.RouterGroup) {
 	group.POST("account", func(r *ghttp.Request) { addAccount(r) })

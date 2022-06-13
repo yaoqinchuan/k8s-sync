@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/model"
-	"k8s-sync/internal/service"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/utils"
 	"sync"
@@ -21,8 +20,7 @@ const (
 )
 
 var (
-	handlerMap       = make(map[string]WorkspaceHandlerInterface, 5)
-	workspaceService = service.WorkspaceService{}
+	handlerMap = make(map[string]WorkspaceHandlerInterface, 5)
 )
 
 const (

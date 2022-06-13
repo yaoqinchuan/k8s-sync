@@ -7,15 +7,14 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"k8s-sync/internal/service/internal/do"
-	"k8s-sync/internal/service/tasks"
 )
 
 type AsyncTaskDao struct {
 }
 
-func (*AsyncTaskDao) GetReadyAsyncTaskByName(ctx context.Context, name string) (*do.AsyncTask, error) {
+func (*AsyncTaskDao) GetReadyAsyncTaskByName(ctx context.Context, name, readyTask1, readyTask2 string) (*do.AsyncTask, error) {
 	connect := g.DB("default")
-	record, err := connect.GetOne(ctx, fmt.Sprint("select * from async_task where name = ? and status in (?, ?) and deleted = 0"), name, tasks.TASK_STAUS_PENDING, tasks.TASK_STAUS_PENDING)
+	record, err := connect.GetOne(ctx, fmt.Sprint("select * from async_task where name = ? and status in (?, ?) and deleted = 0"), name, readyTask1, readyTask2)
 	if err != nil {
 		return nil, err
 	}
@@ -30,9 +29,9 @@ func (*AsyncTaskDao) GetReadyAsyncTaskByName(ctx context.Context, name string) (
 	return result, nil
 }
 
-func (*AsyncTaskDao) UpdateTimeoutAsyncTaskToReady(ctx context.Context) error {
+func (*AsyncTaskDao) UpdateTimeoutAsyncTaskToReady(ctx context.Context, status string) error {
 	connect := g.DB("default")
-	_, err := connect.Update(ctx, "async_task", "status=?", "deleted = 0 and task_timeout_time>NOW()", tasks.TASK_STAUS_PENDING)
+	_, err := connect.Update(ctx, "async_task", "status=?", "deleted = 0 and task_timeout_time>NOW()", status)
 	if err != nil {
 		return err
 	}
