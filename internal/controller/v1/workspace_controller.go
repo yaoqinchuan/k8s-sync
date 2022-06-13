@@ -26,7 +26,7 @@ func getWorkspace(r *ghttp.Request) {
 	if workspaceName := r.Get("name"); nil != workspaceName {
 		workspaceModel, err = workspaceService.GetWorkspaceByName(r.Context(), workspaceName.String())
 	} else if workspaceId := r.Get("id"); nil != workspaceId {
-		workspaceModel, err = workspaceService.GetWorkspaceById(r.Context(), workspaceId.Int())
+		workspaceModel, err = workspaceService.GetWorkspaceById(r.Context(), workspaceId.Int64())
 	}
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
@@ -42,7 +42,7 @@ func startWorkspaceByNameOrId(r *ghttp.Request) {
 	if workspaceName := r.Get("name"); nil != workspaceName {
 		workspaceModel, err = workspaceService.GetWorkspaceByName(r.Context(), workspaceName.String())
 	} else if workspaceId := r.Get("id"); nil != workspaceId {
-		workspaceModel, err = workspaceService.GetWorkspaceById(r.Context(), workspaceId.Int())
+		workspaceModel, err = workspaceService.GetWorkspaceById(r.Context(), workspaceId.Int64())
 	}
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
@@ -104,7 +104,7 @@ func updateWorkspace(r *ghttp.Request) {
 	workspaceModel.Modifier = userInfo.UserName
 	workspaceModel.UpdateAt = gtime.Now()
 	saveMap := gconv.Map(*workspaceModel)
-	id, err := workspaceService.UpdateWorkspaceById(r.Context(), &saveMap, workspaceId.Int())
+	id, err := workspaceService.UpdateWorkspaceById(r.Context(), &saveMap, workspaceId.Int64())
 	if err != nil {
 		utils.RestFailed(err.Error(), r)
 		return
@@ -116,7 +116,7 @@ func updateWorkspace(r *ghttp.Request) {
 func deleteWorkspace(r *ghttp.Request) {
 	var err error
 	if accountId := r.Get("id"); nil != accountId {
-		_, err = workspaceService.DeleteById(r.Context(), accountId.Int())
+		_, err = workspaceService.DeleteById(r.Context(), accountId.Int64())
 	}
 	if err != nil {
 		utils.RestFailed(err.Error(), r)

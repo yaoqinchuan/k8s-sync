@@ -4,7 +4,7 @@ import (
 	"context"
 	"k8s-sync/internal/service/internal/dao"
 	"k8s-sync/internal/service/internal/do"
-	"k8s-sync/internal/service/tasks/handlers"
+	"k8s-sync/internal/service/tasks"
 )
 
 type WorkspaceAsyncTaskImpl struct {
@@ -12,8 +12,7 @@ type WorkspaceAsyncTaskImpl struct {
 }
 
 var (
-	workspaceDao     = dao.WorkspaceDao{}
-	workspaceHandler = handlers.WorkspaceHandler{}
+	workspaceDao = dao.WorkspaceDao{}
 )
 
 func (*WorkspaceAsyncTaskImpl) PreExec(ctx context.Context, task *do.AsyncTask) {
@@ -23,7 +22,7 @@ func (*WorkspaceAsyncTaskImpl) DoExec(ctx context.Context, task *do.AsyncTask) {
 	if err != nil {
 		panic(err)
 	}
-	workspaceHandler.BatchDisPatchHandler(ctx, workspaces)
+	tasks.BatchDisPatchHandler(ctx, workspaces)
 }
 func (*WorkspaceAsyncTaskImpl) DoOnSuccess(ctx context.Context, task *do.AsyncTask) error {
 	return nil

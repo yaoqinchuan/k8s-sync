@@ -12,7 +12,6 @@ import (
 	"k8s-sync/internal/service/internal/dao"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/service/internal/k8s"
-	"k8s-sync/internal/service/tasks/handlers"
 )
 
 type WorkspaceService struct {
@@ -117,7 +116,7 @@ func (*WorkspaceService) DeleteById(ctx context.Context, id int64) (int64, error
 	return workspaceDao.DeleteById(ctx, id)
 }
 func (workspaceService *WorkspaceService) CreateWorkspace(ctx context.Context, workspaceModel *model.WorkspaceModel) (int64, error) {
-	workspaceModel.Status = handlers.WS_PENDING
+	workspaceModel.Status = consts.WS_PENDING
 	workspaceId, err := workspaceService.AddWorkspace(ctx, workspaceModel)
 	if err != nil {
 		return 0, err
@@ -156,31 +155,31 @@ func (workspaceService *WorkspaceService) CreateWorkspace(ctx context.Context, w
 func (workspaceService *WorkspaceService) StartWorkspace(ctx context.Context, workspaceId int64) error {
 	workspaceModel, err := workspaceService.GetWorkspaceById(ctx, workspaceId)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 
-	workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_STARTING, workspaceModel.Id)
+	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 
-	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_STARTING, workspaceModel.Id)
+	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 	if err != nil {
 		return err
 	}
 	err = k8s.DoCreateWorkspace(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 
 	err = k8s.DoCreatePVC(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 
 	err = k8s.DoCreateSVC(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
 	return nil
@@ -189,17 +188,17 @@ func (workspaceService *WorkspaceService) StartWorkspace(ctx context.Context, wo
 func (workspaceService *WorkspaceService) RestoringWorkspace(ctx context.Context, workspaceId int64) (bool, error) {
 	workspaceModel, err := workspaceService.GetWorkspaceById(ctx, workspaceId)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return false, err
 	}
-	workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_STARTING, workspaceModel.Id)
-	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_STARTING, workspaceModel.Id)
+	workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
+	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STARTING, workspaceModel.Id)
 	if err != nil {
 		return false, err
 	}
 	err = k8s.DoRestoreWorkspace(ctx, k8s.ClientSet, workspaceModel.Input)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return false, err
 	}
 	return true, nil
@@ -208,11 +207,11 @@ func (workspaceService *WorkspaceService) RestoringWorkspace(ctx context.Context
 func (workspaceService *WorkspaceService) StoppingWorkspace(ctx context.Context, workspaceId int64) error {
 	workspaceModel, err := workspaceService.GetWorkspaceById(ctx, workspaceId)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
-	workspaceModel.Status = handlers.WS_STOPPING
-	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_STOPPING, workspaceModel.Id)
+	workspaceModel.Status = consts.WS_STOPPING
+	_, err = workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_STOPPING, workspaceModel.Id)
 	if err != nil {
 		return err
 	}
@@ -228,10 +227,10 @@ func (workspaceService *WorkspaceService) StoppingWorkspace(ctx context.Context,
 func (workspaceService *WorkspaceService) DeletingWorkspace(ctx context.Context, workspaceId int64) error {
 	workspaceModel, err := workspaceService.GetWorkspaceById(ctx, workspaceId)
 	if err != nil {
-		workspaceService.UpdateWorkspaceStatusById(ctx, handlers.WS_ERROR, workspaceModel.Id)
+		workspaceService.UpdateWorkspaceStatusById(ctx, consts.WS_ERROR, workspaceModel.Id)
 		return err
 	}
-	workspaceModel.Status = handlers.WS_DELETING
+	workspaceModel.Status = consts.WS_DELETING
 	workspaceComponents, err := workspaceComponentDao.GetWorkspaceComponentByWorkspaceId(ctx, workspaceModel.Id)
 	if err != nil {
 		return err

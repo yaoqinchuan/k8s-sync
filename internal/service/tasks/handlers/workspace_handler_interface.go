@@ -1,49 +1,18 @@
-package handlers
+package tasks
 
 import (
 	"context"
 	"fmt"
 	"github.com/gogf/gf/v2/os/gtime"
+	"k8s-sync/internal/consts"
 	"k8s-sync/internal/model"
 	"k8s-sync/internal/service/internal/do"
 	"k8s-sync/internal/utils"
 	"sync"
 )
 
-const (
-	WORKSPACE_TASK_PRE_EXECUTE = "PRE_EXECUTE"
-	WORKSPACE_TASK_EXECUTING   = "EXECUTING"
-	WORKSPACE_TASK_SUCCESS     = "SUCCESS"
-	WORKSPACE_TASK_ERROR       = "ERROR"
-	WORKSPACE_TASK_TIMEOUT     = "TIMEOUT"
-	WORKSPACE_TASK_FINISH      = "FINISH"
-)
-
 var (
 	handlerMap = make(map[string]WorkspaceHandlerInterface, 5)
-)
-
-const (
-	WS_STARTING_TIMEOUT_PERIOD  = 600
-	WS_RESTORING_TIMEOUT_PERIOD = 600
-	WS_STOPPING_TIMEOUT_PERIOD  = 600
-	WS_DELETING_TIMEOUT_PERIOD  = 600
-
-	WS_PENDING = "PENDING"
-
-	WS_STARTING         = "STARTING"
-	WS_RESTORING        = "RESTORING"
-	WS_STARTING_TIMEOUT = "STARTING_TIMEOUT"
-	WS_RUNNING          = "RUNNING"
-
-	WS_DELETING         = "DELETING"
-	WS_DELETED          = "DELETED"
-	WS_DELETING_TIMEOUT = "DELETING_TIMEOUT"
-
-	WS_STOPPING         = "STOPPING"
-	WS_STOPPED          = "STOPPED"
-	WS_STOPPING_TIMEOUT = "STOPPING_TIMEOUT"
-	WS_ERROR            = "ERROR"
 )
 
 type WorkspaceHandlerInterface interface {
@@ -56,10 +25,10 @@ type WorkspaceHandlerInterface interface {
 }
 
 func init() {
-	handlerMap[WS_STARTING] = &WorkspaceStartingHandler{}
-	handlerMap[WS_RESTORING] = &WorkspaceStartingHandler{}
-	handlerMap[WS_DELETING] = &WorkspaceDeletingHandler{}
-	handlerMap[WS_STOPPING] = &WorkspaceStoppingHandler{}
+	handlerMap[consts.WS_STARTING] = &WorkspaceStartingHandler{}
+	handlerMap[consts.WS_RESTORING] = &WorkspaceStartingHandler{}
+	handlerMap[consts.WS_DELETING] = &WorkspaceDeletingHandler{}
+	handlerMap[consts.WS_STOPPING] = &WorkspaceStoppingHandler{}
 }
 
 func doWorkspaceRefreshTask(ctx context.Context, workspaceHandlerParams *model.WorkspaceHandlerParams, workspaceHandlerInterface WorkspaceHandlerInterface) {
@@ -86,10 +55,7 @@ func doWorkspaceRefreshTask(ctx context.Context, workspaceHandlerParams *model.W
 
 }
 
-type WorkspaceHandler struct {
-}
-
-func (*WorkspaceHandler) DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) {
+func DisPatchHandler(ctx context.Context, workspaceModel *model.WorkspaceModel) {
 	if nil == workspaceModel {
 		return
 	}
@@ -111,7 +77,7 @@ func (*WorkspaceHandler) DisPatchHandler(ctx context.Context, workspaceModel *mo
 	wg.Wait()
 }
 
-func (*WorkspaceHandler) BatchDisPatchHandler(ctx context.Context, workspaceModels []*do.WorkspaceDo) {
+func BatchDisPatchHandler(ctx context.Context, workspaceModels []*do.WorkspaceDo) {
 	if nil == workspaceModels || 0 == len(workspaceModels) {
 		return
 	}
